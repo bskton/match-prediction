@@ -24,19 +24,13 @@ function match(int $firstTeam, int $secondTeam) : array {
   $avgExpectedScoredGoalsForFirstTeam = avgExpectedScoredGoalsFor($firstTeam, $secondTeam, $data, $avgScoredGoals);
   $avgExpectedScoredGoalsForSecondTeam = avgExpectedScoredGoalsFor($secondTeam, $firstTeam, $data, $avgScoredGoals);
 
-  print("Scored Goals Probability For First Team\n");
   $scoredGoalsProbabilityForFirstTeam = scoredGoalsProbability($avgExpectedScoredGoalsForFirstTeam);
-  foreach($scoredGoalsProbabilityForFirstTeam as $scoredGoals => $probability) {
-    printf("%d %f \n", $scoredGoals, $probability);
-  }
+  $mostExpectedScoredGoalsForFirstTeam = mostExpectedScoredGoals($scoredGoalsProbabilityForFirstTeam);
 
-  print("Scored Goals Probability For Second Team\n");
   $scoredGoalsProbabilityForSecondTeam = scoredGoalsProbability($avgExpectedScoredGoalsForSecondTeam);
-  foreach($scoredGoalsProbabilityForSecondTeam as $scoredGoals => $probability) {
-    printf("%d %f \n", $scoredGoals, $probability);
-  }
+  $mostExpectedScoredGoalsForSecondTeam = mostExpectedScoredGoals($scoredGoalsProbabilityForSecondTeam);
 
-  return [$firstTeam, $secondTeam];
+  return [$mostExpectedScoredGoalsForFirstTeam, $mostExpectedScoredGoalsForSecondTeam];
 }
 
 function avgScoredGoalsBy(int $team, array $data) : float {
@@ -59,8 +53,14 @@ function avgExpectedScoredGoalsFor(int $team, int $opponent, array $data, float 
   return relAttackPowerFor($team, $data, $avgScoredGoals) * relDefensePowerFor($opponent, $data, $avgScoredGoals) * $avgScoredGoals;
 }
 
-function scoredGoalsProbability(float $avgExpectedScoredGoals) {
+function scoredGoalsProbability(float $avgExpectedScoredGoals) : array {
+  $res = [];
   for ($i = 0; $i < 8; $i++) {
-    yield stats_dens_pmf_poisson($i, $avgExpectedScoredGoals);
+    $res[] = stats_dens_pmf_poisson($i, $avgExpectedScoredGoals);
   }
+  return $res;
+}
+
+function mostExpectedScoredGoals(array $scoredGoalsProbability) : int {
+  return array_keys($scoredGoalsProbability, max($scoredGoalsProbability))[0];
 }
