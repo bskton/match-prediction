@@ -5,11 +5,14 @@ function match(int $firstTeam, int $secondTeam) : array {
 
   $totalGames = 0;
   $totalScoredGoals = 0;
+  $totalSkippedGoals = 0;
   foreach ($data as $team) {
     $totalGames += $team['games'];
     $totalScoredGoals += $team['goals']['scored'];
+    $totalSkippedGoals += $team['goals']['skiped'];
   }
-  $avgScoredGoals = $totalScoredGoals / $totalGames; // 1.5619402985075
+  $avgScoredGoals = $totalScoredGoals / $totalGames;
+  $avgSkippedGoals = $totalSkippedGoals / $totalGames;
 
   $avgScoredGoalsByFirstTeam = avgScoredGoalsBy($firstTeam, $data);
   $avgSkippedGoalsByFirstTeam = avgSkippedGoalsBy($firstTeam, $data);
@@ -17,12 +20,12 @@ function match(int $firstTeam, int $secondTeam) : array {
   $avgSkippedGoalsBySecondTeam = avgSkippedGoalsBy($secondTeam, $data);
 
   $relAttackPowerForFirstTeam = relAttackPowerFor($firstTeam, $data, $avgScoredGoals);
-  $relDefensePowerForFirstTeam = relDefensePowerFor($firstTeam, $data, $avgScoredGoals);
+  $relDefensePowerForFirstTeam = relDefensePowerFor($firstTeam, $data, $avgSkippedGoals);
   $relAttackPowerForSecondTeam = relAttackPowerFor($secondTeam, $data, $avgScoredGoals);
-  $relDefensePowerForSecondTeam = relDefensePowerFor($secondTeam, $data, $avgScoredGoals);
+  $relDefensePowerForSecondTeam = relDefensePowerFor($secondTeam, $data, $avgSkippedGoals);
 
-  $avgExpectedScoredGoalsForFirstTeam = avgExpectedScoredGoalsFor($firstTeam, $secondTeam, $data, $avgScoredGoals);
-  $avgExpectedScoredGoalsForSecondTeam = avgExpectedScoredGoalsFor($secondTeam, $firstTeam, $data, $avgScoredGoals);
+  $avgExpectedScoredGoalsForFirstTeam = avgExpectedScoredGoalsFor($firstTeam, $secondTeam, $data, $avgScoredGoals, $avgSkippedGoals);
+  $avgExpectedScoredGoalsForSecondTeam = avgExpectedScoredGoalsFor($secondTeam, $firstTeam, $data, $avgScoredGoals, $avgSkippedGoals);
 
   $scoredGoalsProbabilityForFirstTeam = scoredGoalsProbability($avgExpectedScoredGoalsForFirstTeam);
   $mostExpectedScoredGoalsForFirstTeam = mostExpectedScoredGoals($scoredGoalsProbabilityForFirstTeam);
@@ -45,12 +48,12 @@ function relAttackPowerFor(int $team, array $data, float $avgScoredGoals) : floa
   return avgScoredGoalsBy($team, $data) / $avgScoredGoals;
 }
 
-function relDefensePowerFor(int $team, array $data, float $avgScoredGoals) : float {
-  return avgSkippedGoalsBy($team, $data) / $avgScoredGoals;
+function relDefensePowerFor(int $team, array $data, float $avgSkippedGoals) : float {
+  return avgSkippedGoalsBy($team, $data) / $avgSkippedGoals;
 }
 
-function avgExpectedScoredGoalsFor(int $team, int $opponent, array $data, float $avgScoredGoals) : float {
-  return relAttackPowerFor($team, $data, $avgScoredGoals) * relDefensePowerFor($opponent, $data, $avgScoredGoals) * $avgScoredGoals;
+function avgExpectedScoredGoalsFor(int $team, int $opponent, array $data, float $avgScoredGoals, float $avgSkippedGoals) : float {
+  return relAttackPowerFor($team, $data, $avgScoredGoals) * relDefensePowerFor($opponent, $data, $avgSkippedGoals) * $avgScoredGoals;
 }
 
 function scoredGoalsProbability(float $avgExpectedScoredGoals) : array {
