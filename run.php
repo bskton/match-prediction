@@ -1,6 +1,6 @@
 <?php
 
-require 'data.php';
+require 'src/data.php';
 require 'index.php';
 
 $n = 1;
