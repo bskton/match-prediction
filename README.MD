@@ -8,3 +8,8 @@ To run test use
 ```
 docker-compose up
 ```
+
+To run on real data from data.php use
+```
+docker-compose run app php run.php
+```
