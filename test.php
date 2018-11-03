@@ -30,6 +30,14 @@ $games = [
     'firstTeam' => 31,
     'secondTeam' => 0,
     'score' => [0, 3]
+  ],[
+    'firstTeam' => 6,
+    'secondTeam' => 27,
+    'score' => [2, 1]
+  ],[
+    'firstTeam' => 27,
+    'secondTeam' => 6,
+    'score' => [1, 2]
   ]
 ];
 

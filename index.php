@@ -3,67 +3,76 @@
 function match(int $firstTeam, int $secondTeam) : array {
   require 'data.php';
 
-  $totalGames = 0;
-  $totalScoredGoals = 0;
-  $totalSkippedGoals = 0;
-  foreach ($data as $team) {
-    $totalGames += $team['games'];
-    $totalScoredGoals += $team['goals']['scored'];
-    $totalSkippedGoals += $team['goals']['skiped'];
+  $p = new Prediction($data);
+  return $p->makeFor($firstTeam, $secondTeam);
+}
+
+class Prediction
+{
+  private $data;
+
+  private $avgScoredGoals;
+
+  private $avgSkippedGoals;
+
+  function __construct(array $data) {
+    $this->data = $data;
   }
-  $avgScoredGoals = $totalScoredGoals / $totalGames;
-  $avgSkippedGoals = $totalSkippedGoals / $totalGames;
 
-  $avgScoredGoalsByFirstTeam = avgScoredGoalsBy($firstTeam, $data);
-  $avgSkippedGoalsByFirstTeam = avgSkippedGoalsBy($firstTeam, $data);
-  $avgScoredGoalsBySecondTeam = avgScoredGoalsBy($secondTeam, $data);
-  $avgSkippedGoalsBySecondTeam = avgSkippedGoalsBy($secondTeam, $data);
+  function makeFor(int $firstTeam, int $secondTeam) : array {
+    $this->avgScoredAndSkippedForLeague();
 
-  $relAttackPowerForFirstTeam = relAttackPowerFor($firstTeam, $data, $avgScoredGoals);
-  $relDefensePowerForFirstTeam = relDefensePowerFor($firstTeam, $data, $avgSkippedGoals);
-  $relAttackPowerForSecondTeam = relAttackPowerFor($secondTeam, $data, $avgScoredGoals);
-  $relDefensePowerForSecondTeam = relDefensePowerFor($secondTeam, $data, $avgSkippedGoals);
-
-  $avgExpectedScoredGoalsForFirstTeam = avgExpectedScoredGoalsFor($firstTeam, $secondTeam, $data, $avgScoredGoals, $avgSkippedGoals);
-  $avgExpectedScoredGoalsForSecondTeam = avgExpectedScoredGoalsFor($secondTeam, $firstTeam, $data, $avgScoredGoals, $avgSkippedGoals);
-
-  $scoredGoalsProbabilityForFirstTeam = scoredGoalsProbability($avgExpectedScoredGoalsForFirstTeam);
-  $mostExpectedScoredGoalsForFirstTeam = mostExpectedScoredGoals($scoredGoalsProbabilityForFirstTeam);
-
-  $scoredGoalsProbabilityForSecondTeam = scoredGoalsProbability($avgExpectedScoredGoalsForSecondTeam);
-  $mostExpectedScoredGoalsForSecondTeam = mostExpectedScoredGoals($scoredGoalsProbabilityForSecondTeam);
-
-  return [$mostExpectedScoredGoalsForFirstTeam, $mostExpectedScoredGoalsForSecondTeam];
-}
-
-function avgScoredGoalsBy(int $team, array $data) : float {
-  return $data[$team]['goals']['scored'] / $data[$team]['games'];
-}
-
-function avgSkippedGoalsBy(int $team, array $data) : float {
-  return $data[$team]['goals']['skiped'] / $data[$team]['games'];
-}
-
-function relAttackPowerFor(int $team, array $data, float $avgScoredGoals) : float {
-  return avgScoredGoalsBy($team, $data) / $avgScoredGoals;
-}
-
-function relDefensePowerFor(int $team, array $data, float $avgSkippedGoals) : float {
-  return avgSkippedGoalsBy($team, $data) / $avgSkippedGoals;
-}
-
-function avgExpectedScoredGoalsFor(int $team, int $opponent, array $data, float $avgScoredGoals, float $avgSkippedGoals) : float {
-  return relAttackPowerFor($team, $data, $avgScoredGoals) * relDefensePowerFor($opponent, $data, $avgSkippedGoals) * $avgScoredGoals;
-}
-
-function scoredGoalsProbability(float $avgExpectedScoredGoals) : array {
-  $res = [];
-  for ($i = 0; $i < 8; $i++) {
-    $res[] = stats_dens_pmf_poisson($i, $avgExpectedScoredGoals);
+    return [
+      $this->mostExpectedScoredGoals($firstTeam, $secondTeam),
+      $this->mostExpectedScoredGoals($secondTeam, $firstTeam)
+    ];
   }
-  return $res;
-}
 
-function mostExpectedScoredGoals(array $scoredGoalsProbability) : int {
-  return array_keys($scoredGoalsProbability, max($scoredGoalsProbability))[0];
+  private function avgScoredAndSkippedForLeague() {
+    $totalGames = 0;
+    $totalScoredGoals = 0;
+    $totalSkippedGoals = 0;
+    foreach ($this->data as $team) {
+      $totalGames += $team['games'];
+      $totalScoredGoals += $team['goals']['scored'];
+      $totalSkippedGoals += $team['goals']['skiped'];
+    }
+    $this->avgScoredGoals = $totalScoredGoals / $totalGames;
+    $this->avgSkippedGoals = $totalSkippedGoals / $totalGames;
+  }
+
+  private function avgScoredGoalsBy(int $team) : float {
+    return $this->data[$team]['goals']['scored'] / $this->data[$team]['games'];
+  }
+
+  private function avgSkippedGoalsBy(int $team) : float {
+     return $this->data[$team]['goals']['skiped'] / $this->data[$team]['games'];
+  }
+
+  private function relAttackStrengtFor(int $team) : float {
+    return $this->avgScoredGoalsBy($team) / $this->avgScoredGoals;
+  }
+
+  private function relDefenseStrengtFor(int $team) : float {
+    return $this->avgSkippedGoalsBy($team) / $this->avgSkippedGoals;
+  }
+
+  private function avgExpectedScoredGoalsFor(int $team, int $opponent) : float {
+    return $this->relAttackStrengtFor($team) 
+      * $this->relDefenseStrengtFor($opponent) 
+      * $this->avgScoredGoals;
+  }
+
+  private function scoredGoalsProbability(int $team, int $opponent) : array {
+    $res = [];
+    for ($i = 0; $i < 6; $i++) {
+      $res[] = stats_dens_pmf_poisson($i, $this->avgExpectedScoredGoalsFor($team, $opponent));
+    }
+    return $res;
+  }
+
+  function mostExpectedScoredGoals(int $team, int $opponent) : int {
+    $scoredGoalsProbability = $this->scoredGoalsProbability($team, $opponent);
+    return array_keys($scoredGoalsProbability, max($scoredGoalsProbability))[0];
+  }
 }
