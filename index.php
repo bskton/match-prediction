@@ -66,9 +66,21 @@ class Prediction
   private function scoredGoalsProbability(int $team, int $opponent) : array {
     $res = [];
     for ($i = 0; $i < 6; $i++) {
-      $res[] = stats_dens_pmf_poisson($i, $this->avgExpectedScoredGoalsFor($team, $opponent));
+      $res[] = $this->poisson($i, $this->avgExpectedScoredGoalsFor($team, $opponent));
     }
     return $res;
+  }
+
+  private function poisson(int $x, float $lb) {
+    return pow($lb, $x) / $this->factorial($x) * exp(-$lb);
+  }
+
+  private function factorial(int $n) {
+    $f = 1; 
+    for ($i = 1; $i <= $n; $i++){ 
+      $f = $f * $i; 
+    } 
+    return $f;
   }
 
   function mostExpectedScoredGoals(int $team, int $opponent) : int {
