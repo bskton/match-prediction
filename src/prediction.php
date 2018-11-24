@@ -42,17 +42,17 @@ class Prediction
      return $this->data[$team]['goals']['skiped'] / $this->data[$team]['games'];
   }
 
-  private function relAttackStrengtFor(int $team) : float {
+  private function relAttackStrengthFor(int $team) : float {
     return $this->avgScoredGoalsBy($team) / $this->avgScoredGoals;
   }
 
-  private function relDefenseStrengtFor(int $team) : float {
+  private function relDefenseStrengthFor(int $team) : float {
     return $this->avgSkippedGoalsBy($team) / $this->avgSkippedGoals;
   }
 
   private function avgExpectedScoredGoalsFor(int $team, int $opponent) : float {
-    return $this->relAttackStrengtFor($team) 
-      * $this->relDefenseStrengtFor($opponent) 
+    return $this->relAttackStrengthFor($team) 
+      * $this->relDefenseStrengthFor($opponent) 
       * $this->avgScoredGoals;
   }
 
